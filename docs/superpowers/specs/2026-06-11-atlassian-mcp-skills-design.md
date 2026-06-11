@@ -68,7 +68,6 @@ The server reads configuration from environment variables.
 JIRA_BASE_URL=https://jira.example.company.com
 CONFLUENCE_BASE_URL=https://confluence.example.company.com
 ATLASSIAN_PAT=...
-ATLASSIAN_TLS_REJECT_UNAUTHORIZED=true
 ```
 
 Jira and Confluence may be configured independently. This supports installations where only one product is available or where each product has a separate base URL.

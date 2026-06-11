@@ -163,7 +163,6 @@ Create `.env.example`:
 JIRA_BASE_URL=https://jira.example.company.com
 CONFLUENCE_BASE_URL=https://confluence.example.company.com
 ATLASSIAN_PAT=replace-with-a-local-token
-ATLASSIAN_TLS_REJECT_UNAUTHORIZED=true
 ```
 
 - [ ] **Step 5: Add a temporary MCP entrypoint**
@@ -255,13 +254,11 @@ describe("loadConfig", () => {
     const config = loadConfig({
       JIRA_BASE_URL: "https://jira.example.com/",
       CONFLUENCE_BASE_URL: "https://confluence.example.com/",
-      ATLASSIAN_PAT: "abc123",
-      ATLASSIAN_TLS_REJECT_UNAUTHORIZED: "false"
+      ATLASSIAN_PAT: "abc123"
     });
 
     expect(config.jiraBaseUrl).toBe("https://jira.example.com");
     expect(config.confluenceBaseUrl).toBe("https://confluence.example.com");
-    expect(config.tlsRejectUnauthorized).toBe(false);
   });
 });
 
@@ -301,7 +298,6 @@ export interface AppConfig {
   jiraBaseUrl?: string;
   confluenceBaseUrl?: string;
   pat: string;
-  tlsRejectUnauthorized: boolean;
 }
 
 export type Env = Record<string, string | undefined>;
@@ -331,8 +327,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
   return {
     jiraBaseUrl,
     confluenceBaseUrl,
-    pat,
-    tlsRejectUnauthorized: env.ATLASSIAN_TLS_REJECT_UNAUTHORIZED !== "false"
+    pat
   };
 }
 
@@ -1733,7 +1728,6 @@ The server reads configuration from environment variables.
 | `JIRA_BASE_URL` | Required when using Jira | Base URL such as `https://jira.example.company.com` |
 | `CONFLUENCE_BASE_URL` | Required when using Confluence | Base URL such as `https://confluence.example.company.com` |
 | `ATLASSIAN_PAT` | Yes | Personal access token supplied by the user |
-| `ATLASSIAN_TLS_REJECT_UNAUTHORIZED` | No | Set to `false` only for controlled corporate TLS troubleshooting |
 
 At least one product URL is required.
 ```

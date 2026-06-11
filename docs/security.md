@@ -16,5 +16,3 @@ Authorization: Bearer <PAT>
 ```
 
 Errors and logs redact bearer tokens and configured PAT values.
-
-Use `ATLASSIAN_TLS_REJECT_UNAUTHORIZED=false` only for controlled corporate TLS troubleshooting. Restore normal TLS verification when troubleshooting is complete.
