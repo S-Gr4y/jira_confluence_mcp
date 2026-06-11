@@ -3,7 +3,10 @@ import { listMacros, validateStorage } from "../atlassian/confluence-storage.js"
 import {
   confluenceAddPageCommentSchema,
   confluenceCreatePageSchema,
+  confluenceGetAttachmentsSchema,
   confluenceGetPageSchema,
+  confluenceGetPageChildrenSchema,
+  confluenceGetSpaceSchema,
   confluenceSearchPagesSchema,
   confluenceUpdatePageSchema
 } from "../schemas/confluence.js";
@@ -24,6 +27,21 @@ export function buildConfluenceTools(confluence: ConfluenceClient): Record<strin
       description: "Search Confluence pages with CQL.",
       inputSchema: confluenceSearchPagesSchema,
       handler: async (input) => confluence.searchPages(confluenceSearchPagesSchema.parse(input))
+    },
+    confluence_get_page_children: {
+      description: "Get child pages for a Confluence page.",
+      inputSchema: confluenceGetPageChildrenSchema,
+      handler: async (input) => confluence.getPageChildren(confluenceGetPageChildrenSchema.parse(input).pageId)
+    },
+    confluence_get_space: {
+      description: "Get a Confluence space by key.",
+      inputSchema: confluenceGetSpaceSchema,
+      handler: async (input) => confluence.getSpace(confluenceGetSpaceSchema.parse(input).spaceKey)
+    },
+    confluence_get_attachments: {
+      description: "Get attachments for a Confluence page.",
+      inputSchema: confluenceGetAttachmentsSchema,
+      handler: async (input) => confluence.getAttachments(confluenceGetAttachmentsSchema.parse(input).pageId)
     },
     confluence_list_page_macros: {
       description: "List macros from a Confluence page storage body.",

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  assertExistingMacrosPreserved,
   listMacros,
   replaceParagraphTextPreservingMacros,
   validateStorage
@@ -53,6 +54,12 @@ describe("Confluence storage macro handling", () => {
 
   it("fails closed on raw CDATA terminators outside CDATA sections", () => {
     expect(() => validateStorage("<p>broken ]]> no</p>")).toThrow("Invalid Confluence storage XHTML");
+  });
+
+  it("rejects updates that would remove existing macro storage", () => {
+    expect(() => assertExistingMacrosPreserved(fixture, "<p>Intro</p><p>Outro</p>")).toThrow(
+      "Confluence update would remove or rewrite an existing macro"
+    );
   });
 });
 

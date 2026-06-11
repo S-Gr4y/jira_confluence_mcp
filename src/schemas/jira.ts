@@ -12,6 +12,27 @@ export const jiraSearchIssuesSchema = z.object({
   startAt: z.number().int().min(0).default(0)
 });
 
+export const jiraGetProjectSchema = z.object({
+  projectKey: z.string().min(1)
+});
+
+export const jiraGetIssueTransitionsSchema = z.object({
+  issueKey: jiraIssueKeySchema
+});
+
+export const jiraGetBoardsSchema = z.object({
+  projectKeyOrId: z.string().min(1).optional(),
+  startAt: z.number().int().min(0).default(0),
+  maxResults: z.number().int().min(1).max(100).default(50)
+});
+
+export const jiraGetSprintsSchema = z.object({
+  boardId: z.number().int().positive(),
+  startAt: z.number().int().min(0).default(0),
+  maxResults: z.number().int().min(1).max(100).default(50),
+  state: z.enum(["future", "active", "closed"]).optional()
+});
+
 export const jiraAddCommentSchema = z
   .object({
     issueKey: jiraIssueKeySchema,

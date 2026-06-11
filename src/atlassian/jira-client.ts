@@ -36,6 +36,20 @@ export class JiraClient {
     return this.http.get(`/rest/api/2/issue/${encodeURIComponent(issueKey)}/transitions`);
   }
 
+  getBoards(input: { projectKeyOrId?: string; startAt: number; maxResults: number }): Promise<unknown> {
+    return this.http.get("/rest/agile/1.0/board", input);
+  }
+
+  getSprints(input: {
+    boardId: number;
+    startAt: number;
+    maxResults: number;
+    state?: "future" | "active" | "closed";
+  }): Promise<unknown> {
+    const { boardId, ...query } = input;
+    return this.http.get(`/rest/agile/1.0/board/${encodeURIComponent(String(boardId))}/sprint`, query);
+  }
+
   addComment(issueKey: string, body: string): Promise<unknown> {
     return this.http.post(`/rest/api/2/issue/${encodeURIComponent(issueKey)}/comment`, { body });
   }

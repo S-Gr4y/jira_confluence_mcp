@@ -1,4 +1,5 @@
 import type { AtlassianHttpClient } from "./http-client.js";
+import { assertExistingMacrosPreserved } from "./confluence-storage.js";
 
 interface ConfluencePage {
   id: string;
@@ -70,6 +71,18 @@ export class ConfluenceClient {
 
   async updatePage(input: { pageId: string; title?: string; storageBody: string }): Promise<unknown> {
     const current = (await this.getPage(input.pageId)) as ConfluencePage;
+    const currentStorage = current.body?.storage?.value;
+
+    if (typeof current.version?.number !== "number") {
+      throw new Error(`Confluence page ${input.pageId} did not include a numeric version`);
+    }
+
+    if (typeof currentStorage !== "string") {
+      throw new Error(`Confluence page ${input.pageId} did not include storage body`);
+    }
+
+    assertExistingMacrosPreserved(currentStorage, input.storageBody);
+
     return this.http.put(`/rest/api/content/${encodeURIComponent(input.pageId)}`, {
       id: current.id,
       type: current.type ?? "page",

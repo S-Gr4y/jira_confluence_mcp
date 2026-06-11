@@ -13,6 +13,18 @@ export const confluenceSearchPagesSchema = z.object({
   start: z.number().int().min(0).default(0)
 });
 
+export const confluenceGetPageChildrenSchema = z.object({
+  pageId: confluencePageIdSchema
+});
+
+export const confluenceGetSpaceSchema = z.object({
+  spaceKey: z.string().min(1)
+});
+
+export const confluenceGetAttachmentsSchema = z.object({
+  pageId: confluencePageIdSchema
+});
+
 export const confluenceCreatePageSchema = z
   .object({
     spaceKey: z.string().min(1),

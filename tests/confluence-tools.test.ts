@@ -12,9 +12,48 @@ describe("ConfluenceClient", () => {
       expand: "body.storage,version,space,ancestors"
     });
   });
+
+  it("rejects page updates that would drop existing macros", async () => {
+    const currentStorage =
+      '<p>Intro</p><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Green</ac:parameter></ac:structured-macro>';
+    const http = {
+      get: vi.fn().mockResolvedValue({
+        id: "123",
+        title: "Page",
+        type: "page",
+        version: { number: 7 },
+        body: { storage: { value: currentStorage, representation: "storage" } }
+      }),
+      put: vi.fn()
+    };
+    const client = new ConfluenceClient(http as never, "https://confluence.example.com");
+
+    await expect(client.updatePage({ pageId: "123", storageBody: "<p>Intro</p>" })).rejects.toThrow(
+      "Confluence update would remove or rewrite an existing macro"
+    );
+
+    expect(http.put).not.toHaveBeenCalled();
+  });
 });
 
 describe("buildConfluenceTools", () => {
+  it("exposes Confluence read helpers from the approved tool surface", async () => {
+    const confluence = {
+      getPageChildren: vi.fn().mockResolvedValue({ results: [] }),
+      getSpace: vi.fn().mockResolvedValue({ key: "DOC" }),
+      getAttachments: vi.fn().mockResolvedValue({ results: [] })
+    };
+    const tools = buildConfluenceTools(confluence as never);
+
+    await expect(tools.confluence_get_page_children.handler({ pageId: "123" })).resolves.toEqual({ results: [] });
+    await expect(tools.confluence_get_space.handler({ spaceKey: "DOC" })).resolves.toEqual({ key: "DOC" });
+    await expect(tools.confluence_get_attachments.handler({ pageId: "123" })).resolves.toEqual({ results: [] });
+
+    expect(confluence.getPageChildren).toHaveBeenCalledWith("123");
+    expect(confluence.getSpace).toHaveBeenCalledWith("DOC");
+    expect(confluence.getAttachments).toHaveBeenCalledWith("123");
+  });
+
   it("dry-runs page creation without calling Confluence", async () => {
     const confluence = {
       pageUrl: vi.fn().mockReturnValue("https://confluence.example.com/pages/viewpage.action?pageId=new"),

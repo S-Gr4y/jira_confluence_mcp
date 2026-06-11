@@ -22,13 +22,11 @@ describe("loadConfig", () => {
     const config = loadConfig({
       JIRA_BASE_URL: "https://jira.example.com/",
       CONFLUENCE_BASE_URL: "https://confluence.example.com/",
-      ATLASSIAN_PAT: "abc123",
-      ATLASSIAN_TLS_REJECT_UNAUTHORIZED: "false"
+      ATLASSIAN_PAT: "abc123"
     });
 
     expect(config.jiraBaseUrl).toBe("https://jira.example.com");
     expect(config.confluenceBaseUrl).toBe("https://confluence.example.com");
-    expect(config.tlsRejectUnauthorized).toBe(false);
   });
 });
 

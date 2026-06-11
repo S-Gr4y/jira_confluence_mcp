@@ -15,6 +15,28 @@ describe("JiraClient", () => {
 });
 
 describe("buildJiraTools", () => {
+  it("exposes Jira read helpers from the approved tool surface", async () => {
+    const jira = {
+      getTransitions: vi.fn().mockResolvedValue({ transitions: [] }),
+      getProject: vi.fn().mockResolvedValue({ key: "ABC" }),
+      getBoards: vi.fn().mockResolvedValue({ values: [] }),
+      getSprints: vi.fn().mockResolvedValue({ values: [] })
+    };
+    const tools = buildJiraTools(jira as never);
+
+    await expect(tools.jira_get_issue_transitions.handler({ issueKey: "ABC-1" })).resolves.toEqual({
+      transitions: []
+    });
+    await expect(tools.jira_get_project.handler({ projectKey: "ABC" })).resolves.toEqual({ key: "ABC" });
+    await expect(tools.jira_get_boards.handler({ projectKeyOrId: "ABC" })).resolves.toEqual({ values: [] });
+    await expect(tools.jira_get_sprints.handler({ boardId: 12 })).resolves.toEqual({ values: [] });
+
+    expect(jira.getTransitions).toHaveBeenCalledWith("ABC-1");
+    expect(jira.getProject).toHaveBeenCalledWith("ABC");
+    expect(jira.getBoards).toHaveBeenCalledWith({ projectKeyOrId: "ABC", startAt: 0, maxResults: 50 });
+    expect(jira.getSprints).toHaveBeenCalledWith({ boardId: 12, startAt: 0, maxResults: 50 });
+  });
+
   it("dry-runs comments without calling Jira", async () => {
     const jira = { addComment: vi.fn() };
     const tools = buildJiraTools(jira as never);
@@ -41,6 +63,23 @@ describe("buildJiraTools", () => {
     expect(jira.transitionIssue).not.toHaveBeenCalled();
     expect(result.changed).toBe(false);
     expect(result.audit.summary).toContain("Would transition");
+  });
+
+  it("preflights valid transitions before transitioning an issue", async () => {
+    const jira = {
+      getTransitions: vi.fn().mockResolvedValue({ transitions: [{ id: "31" }] }),
+      transitionIssue: vi.fn().mockResolvedValue({})
+    };
+    const tools = buildJiraTools(jira as never);
+
+    const result = await tools.jira_transition_issue.handler({
+      issueKey: "ABC-1",
+      transitionId: "31"
+    });
+
+    expect(jira.getTransitions).toHaveBeenCalledWith("ABC-1");
+    expect(jira.transitionIssue).toHaveBeenCalledWith("ABC-1", "31", undefined);
+    expect(result.changed).toBe(true);
   });
 
   it("dry-runs field updates without calling Jira", async () => {

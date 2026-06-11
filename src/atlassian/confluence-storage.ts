@@ -63,6 +63,17 @@ export function replaceParagraphTextPreservingMacros(
   );
 }
 
+export function assertExistingMacrosPreserved(currentStorage: string, nextStorage: string): void {
+  validateStorage(currentStorage);
+  validateStorage(nextStorage);
+
+  for (const macroBlock of structuredMacroBlocks(currentStorage)) {
+    if (!nextStorage.includes(macroBlock)) {
+      throw new Error("Confluence update would remove or rewrite an existing macro");
+    }
+  }
+}
+
 function wrapStorage(storage: string): string {
   return `<root ${wrapperAttributes}>${storage}</root>`;
 }
@@ -241,6 +252,10 @@ function findStructuredMacroRanges(storage: string): ProtectedRange[] {
   }
 
   return ranges;
+}
+
+function structuredMacroBlocks(storage: string): string[] {
+  return findStructuredMacroRanges(storage).map((range) => storage.slice(range.start, range.end));
 }
 
 function replaceParagraphTextOutsideRanges(

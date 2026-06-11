@@ -7,7 +7,6 @@ The server reads configuration from environment variables.
 | `JIRA_BASE_URL` | Required when using Jira | Base URL such as `https://jira.example.company.com` |
 | `CONFLUENCE_BASE_URL` | Required when using Confluence | Base URL such as `https://confluence.example.company.com` |
 | `ATLASSIAN_PAT` | Yes | Personal access token supplied by the user |
-| `ATLASSIAN_TLS_REJECT_UNAUTHORIZED` | No | Set to `false` only for controlled corporate TLS troubleshooting |
 
 At least one product URL is required.
 

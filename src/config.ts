@@ -2,7 +2,6 @@ export interface AppConfig {
   jiraBaseUrl?: string;
   confluenceBaseUrl?: string;
   pat: string;
-  tlsRejectUnauthorized: boolean;
 }
 
 export type Env = Record<string, string | undefined>;
@@ -32,8 +31,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
   return {
     jiraBaseUrl,
     confluenceBaseUrl,
-    pat,
-    tlsRejectUnauthorized: env.ATLASSIAN_TLS_REJECT_UNAUTHORIZED !== "false"
+    pat
   };
 }
 

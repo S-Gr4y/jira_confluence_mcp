@@ -1,7 +1,11 @@
 import type { JiraClient } from "../atlassian/jira-client.js";
 import {
   jiraAddCommentSchema,
+  jiraGetBoardsSchema,
   jiraGetIssueSchema,
+  jiraGetIssueTransitionsSchema,
+  jiraGetProjectSchema,
+  jiraGetSprintsSchema,
   jiraSearchIssuesSchema,
   jiraTransitionIssueSchema,
   jiraUpdateIssueFieldsSchema
@@ -30,6 +34,26 @@ export function buildJiraTools(jira: JiraClient): Record<string, ToolDefinition>
       description: "Search Jira issues with JQL.",
       inputSchema: jiraSearchIssuesSchema,
       handler: async (input) => jira.searchIssues(jiraSearchIssuesSchema.parse(input))
+    },
+    jira_get_issue_transitions: {
+      description: "Get valid transitions for a Jira issue.",
+      inputSchema: jiraGetIssueTransitionsSchema,
+      handler: async (input) => jira.getTransitions(jiraGetIssueTransitionsSchema.parse(input).issueKey)
+    },
+    jira_get_project: {
+      description: "Get a Jira project by key.",
+      inputSchema: jiraGetProjectSchema,
+      handler: async (input) => jira.getProject(jiraGetProjectSchema.parse(input).projectKey)
+    },
+    jira_get_boards: {
+      description: "Get Jira Agile boards, optionally filtered by project.",
+      inputSchema: jiraGetBoardsSchema,
+      handler: async (input) => jira.getBoards(jiraGetBoardsSchema.parse(input))
+    },
+    jira_get_sprints: {
+      description: "Get Jira Agile sprints for a board.",
+      inputSchema: jiraGetSprintsSchema,
+      handler: async (input) => jira.getSprints(jiraGetSprintsSchema.parse(input))
     },
     jira_add_comment: {
       description: "Add a comment to a Jira issue. Supports dryRun.",
@@ -63,6 +87,7 @@ export function buildJiraTools(jira: JiraClient): Record<string, ToolDefinition>
         if (parsed.dryRun) {
           return { changed: false, target, audit: { summary: `Would transition ${parsed.issueKey}` } };
         }
+        await jira.getTransitions(parsed.issueKey);
         await jira.transitionIssue(parsed.issueKey, parsed.transitionId, parsed.comment);
         return { changed: true, target, audit: { summary: `Transitioned ${parsed.issueKey}` } };
       }
