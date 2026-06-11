@@ -51,7 +51,7 @@ export class AtlassianHttpClient {
         `Atlassian request failed with status ${response.status}: ${text}`,
         [this.options.pat]
       );
-      throw new AtlassianError(message, response.status, parsed);
+      throw new AtlassianError(message, response.status, redactDetails(parsed, [this.options.pat]));
     }
 
     return parsed as T;
@@ -76,5 +76,21 @@ function safeJsonParse(text: string): unknown {
     return JSON.parse(text);
   } catch {
     return text;
+  }
+}
+
+function redactDetails(details: unknown, secrets: string[]): unknown {
+  if (typeof details === "string") {
+    return redactSensitive(details, secrets);
+  }
+
+  if (details === undefined) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(redactSensitive(JSON.stringify(details), secrets));
+  } catch {
+    return redactSensitive(String(details), secrets);
   }
 }
