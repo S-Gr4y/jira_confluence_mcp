@@ -1,4 +1,4 @@
-import { XMLBuilder, XMLParser, XMLValidator } from "fast-xml-parser";
+import { XMLParser, XMLValidator } from "fast-xml-parser";
 
 export interface ConfluenceMacro {
   name: string;
@@ -13,13 +13,15 @@ const parserOptions = {
   attributeNamePrefix: "@_",
   cdataPropName: "#cdata",
   ignoreAttributes: false,
+  parseTagValue: false,
   preserveOrder: true
 } as const;
 
 const parser = new XMLParser(parserOptions);
-const builder = new XMLBuilder(parserOptions);
 
 export function validateStorage(storage: string): void {
+  assertNoRawCdataTerminatorOutsideCdata(storage);
+
   const result = XMLValidator.validate(wrapStorage(storage));
 
   if (result !== true) {
@@ -53,22 +55,12 @@ export function replaceParagraphTextPreservingMacros(
 ): string {
   validateStorage(storage);
 
-  const document = parseWrappedStorage(storage);
-  let replaced = false;
-
-  walkNodes(document, (name, children, _attributes, insideMacro) => {
-    if (replaced || insideMacro || name !== "p") {
-      return;
-    }
-
-    const textNode = onlyTextNode(children);
-    if (textNode?.["#text"] === fromText) {
-      textNode["#text"] = toText;
-      replaced = true;
-    }
-  });
-
-  return unwrapStorage(builder.build(document));
+  return replaceParagraphTextOutsideRanges(
+    storage,
+    findStructuredMacroRanges(storage),
+    fromText,
+    escapeXmlText(toText)
+  );
 }
 
 function wrapStorage(storage: string): string {
@@ -88,6 +80,28 @@ function unwrapStorage(wrappedStorage: string): string {
 
 function parseWrappedStorage(storage: string): XmlNode[] {
   return parser.parse(wrapStorage(storage)) as XmlNode[];
+}
+
+function assertNoRawCdataTerminatorOutsideCdata(storage: string): void {
+  let index = 0;
+
+  while (index < storage.length) {
+    if (storage.startsWith("<![CDATA[", index)) {
+      const closeIndex = storage.indexOf("]]>", index + "<![CDATA[".length);
+      if (closeIndex === -1) {
+        throw new Error("Invalid Confluence storage XHTML");
+      }
+
+      index = closeIndex + "]]>".length;
+      continue;
+    }
+
+    if (storage.startsWith("]]>", index)) {
+      throw new Error("Invalid Confluence storage XHTML");
+    }
+
+    index += 1;
+  }
 }
 
 function walkNodes(
@@ -166,15 +180,6 @@ function macroBodyType(nodes: XmlNode[]): ConfluenceMacro["bodyType"] {
   return "none";
 }
 
-function onlyTextNode(nodes: XmlNode[]): XmlNode | undefined {
-  if (nodes.length !== 1 || !isRecord(nodes[0])) {
-    return undefined;
-  }
-
-  const node = nodes[0];
-  return typeof node["#text"] === "string" ? node : undefined;
-}
-
 function textContent(nodes: XmlNode[]): string {
   return nodes
     .map((node) => {
@@ -189,4 +194,140 @@ function textContent(nodes: XmlNode[]): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+interface ProtectedRange {
+  start: number;
+  end: number;
+}
+
+function findStructuredMacroRanges(storage: string): ProtectedRange[] {
+  const ranges: ProtectedRange[] = [];
+  const stack: number[] = [];
+  let index = 0;
+
+  while (index < storage.length) {
+    const tagStart = storage.indexOf("<", index);
+    if (tagStart === -1) {
+      break;
+    }
+
+    if (storage.startsWith("<![CDATA[", tagStart)) {
+      index = skipPast(storage, tagStart, "]]>");
+      continue;
+    }
+
+    if (storage.startsWith("<!--", tagStart)) {
+      index = skipPast(storage, tagStart, "-->");
+      continue;
+    }
+
+    const tagEnd = findTagEnd(storage, tagStart);
+    if (tagEnd === -1) {
+      break;
+    }
+
+    const tag = storage.slice(tagStart, tagEnd + 1);
+    if (isStructuredMacroStartTag(tag)) {
+      stack.push(tagStart);
+    } else if (isStructuredMacroEndTag(tag)) {
+      const start = stack.pop();
+      if (start !== undefined && stack.length === 0) {
+        ranges.push({ start, end: tagEnd + 1 });
+      }
+    }
+
+    index = tagEnd + 1;
+  }
+
+  return ranges;
+}
+
+function replaceParagraphTextOutsideRanges(
+  storage: string,
+  protectedRanges: ProtectedRange[],
+  fromText: string,
+  escapedToText: string
+): string {
+  let index = 0;
+
+  while (index < storage.length) {
+    const tagStart = storage.indexOf("<p", index);
+    if (tagStart === -1) {
+      return storage;
+    }
+
+    const protectedRange = containingRange(protectedRanges, tagStart);
+    if (protectedRange !== undefined) {
+      index = protectedRange.end;
+      continue;
+    }
+
+    const openingTagEnd = findTagEnd(storage, tagStart);
+    if (openingTagEnd === -1 || !isParagraphStartTag(storage.slice(tagStart, openingTagEnd + 1))) {
+      index = tagStart + 1;
+      continue;
+    }
+
+    const closingTagStart = storage.indexOf("</p>", openingTagEnd + 1);
+    if (closingTagStart === -1 || containingRange(protectedRanges, closingTagStart) !== undefined) {
+      return storage;
+    }
+
+    const paragraphText = storage.slice(openingTagEnd + 1, closingTagStart);
+    if (paragraphText === fromText || paragraphText === escapeXmlText(fromText)) {
+      return `${storage.slice(0, openingTagEnd + 1)}${escapedToText}${storage.slice(closingTagStart)}`;
+    }
+
+    index = closingTagStart + "</p>".length;
+  }
+
+  return storage;
+}
+
+function containingRange(ranges: ProtectedRange[], index: number): ProtectedRange | undefined {
+  return ranges.find((range) => range.start <= index && index < range.end);
+}
+
+function skipPast(storage: string, start: number, marker: string): number {
+  const end = storage.indexOf(marker, start + marker.length);
+  return end === -1 ? storage.length : end + marker.length;
+}
+
+function findTagEnd(storage: string, tagStart: number): number {
+  let quote: "\"" | "'" | undefined;
+
+  for (let index = tagStart + 1; index < storage.length; index += 1) {
+    const char = storage[index];
+
+    if (char === "\"" || char === "'") {
+      quote = quote === char ? undefined : quote ?? char;
+      continue;
+    }
+
+    if (char === ">" && quote === undefined) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function isStructuredMacroStartTag(tag: string): boolean {
+  return tag.startsWith("<ac:structured-macro") && !tag.startsWith("</") && !tag.endsWith("/>");
+}
+
+function isStructuredMacroEndTag(tag: string): boolean {
+  return tag.startsWith("</ac:structured-macro");
+}
+
+function isParagraphStartTag(tag: string): boolean {
+  return /^<p(?:\s[^>]*)?>$/.test(tag);
+}
+
+function escapeXmlText(text: string): string {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
