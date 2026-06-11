@@ -33,6 +33,77 @@ describe("AtlassianHttpClient", () => {
     );
   });
 
+  it("joins trailing slash base URLs with relative paths", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      })
+    );
+
+    const client = new AtlassianHttpClient({
+      baseUrl: "https://jira.example.com/",
+      pat: "secret",
+      fetchImpl: fetchMock
+    });
+
+    await client.get("rest/api/2/myself");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://jira.example.com/rest/api/2/myself",
+      expect.any(Object)
+    );
+  });
+
+  it("preserves context paths when joining leading slash paths", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      })
+    );
+
+    const client = new AtlassianHttpClient({
+      baseUrl: "https://host.example.com/jira/",
+      pat: "secret",
+      fetchImpl: fetchMock
+    });
+
+    await client.get("/rest/api/2/myself");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://host.example.com/jira/rest/api/2/myself",
+      expect.any(Object)
+    );
+  });
+
+  it("appends query params to joined URLs", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      })
+    );
+
+    const client = new AtlassianHttpClient({
+      baseUrl: "https://host.example.com/jira/",
+      pat: "secret",
+      fetchImpl: fetchMock
+    });
+
+    await client.get("rest/api/2/search", {
+      jql: "project = TEST",
+      maxResults: 50,
+      validateQuery: false,
+      skip: undefined
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://host.example.com/jira/rest/api/2/search?jql=project+%3D+TEST&maxResults=50&validateQuery=false",
+      expect.any(Object)
+    );
+  });
+
   it("redacts token values from failed responses", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ errorMessages: ["bad token secret"] }), {

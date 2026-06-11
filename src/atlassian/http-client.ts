@@ -58,16 +58,18 @@ export class AtlassianHttpClient {
   }
 
   private buildUrl(path: string, query?: Record<string, string | number | boolean | undefined>): string {
-    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-    const url = new URL(`${this.options.baseUrl}${normalizedPath}`);
+    const base = new URL(this.options.baseUrl);
+    const basePath = base.pathname.replace(/\/+$/, "");
+    const requestPath = path.replace(/^\/+/, "");
+    base.pathname = [basePath, requestPath].filter(Boolean).join("/");
 
     for (const [key, value] of Object.entries(query ?? {})) {
       if (value !== undefined) {
-        url.searchParams.set(key, String(value));
+        base.searchParams.set(key, String(value));
       }
     }
 
-    return url.toString();
+    return base.toString();
   }
 }
 
