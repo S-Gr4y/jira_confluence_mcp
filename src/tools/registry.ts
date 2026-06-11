@@ -19,10 +19,9 @@ function isZodSchemaLike(value: unknown): value is ZodTypeAny {
   );
 }
 
-function toMcpShape(schema: unknown): ZodRawShape {
-  if (isZodSchemaLike(schema) && "shape" in schema) {
-    const shape = (schema as { shape: ZodRawShape | (() => ZodRawShape) }).shape;
-    return typeof shape === "function" ? shape() : shape;
+function toMcpInputSchema(schema: unknown): ZodRawShape | ZodTypeAny {
+  if (isZodSchemaLike(schema)) {
+    return schema;
   }
 
   if (isRecord(schema)) {
@@ -41,12 +40,12 @@ export function registerTools(server: McpServer, tools: Record<string, ToolDefin
       name,
       {
         description: tool.description,
-        inputSchema: toMcpShape(tool.inputSchema as ZodTypeAny)
+        inputSchema: toMcpInputSchema(tool.inputSchema)
       },
-      async (input) => ({
+      async (input: unknown) => ({
         content: [
           {
-            type: "text",
+            type: "text" as const,
             text: JSON.stringify(await tool.handler(input), null, 2)
           }
         ]
