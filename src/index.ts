@@ -4,12 +4,40 @@ import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { ConfluenceClient } from "./atlassian/confluence-client.js";
+import { AtlassianHttpClient } from "./atlassian/http-client.js";
+import { JiraClient } from "./atlassian/jira-client.js";
+import { loadConfig } from "./config.js";
+import { buildConfluenceTools } from "./tools/confluence.js";
+import { buildJiraTools } from "./tools/jira.js";
+import { registerTools } from "./tools/registry.js";
+import { buildSharedTools } from "./tools/shared.js";
 
 export async function main(): Promise<void> {
+  const config = loadConfig();
   const server = new McpServer({
     name: "atlassian-data-center",
     version: "0.1.0"
   });
+
+  const jira = config.jiraBaseUrl
+    ? new JiraClient(new AtlassianHttpClient({ baseUrl: config.jiraBaseUrl, pat: config.pat }), config.jiraBaseUrl)
+    : undefined;
+
+  const confluence = config.confluenceBaseUrl
+    ? new ConfluenceClient(
+        new AtlassianHttpClient({ baseUrl: config.confluenceBaseUrl, pat: config.pat }),
+        config.confluenceBaseUrl
+      )
+    : undefined;
+
+  registerTools(server, buildSharedTools({ jira, confluence }));
+  if (jira) {
+    registerTools(server, buildJiraTools(jira));
+  }
+  if (confluence) {
+    registerTools(server, buildConfluenceTools(confluence));
+  }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
