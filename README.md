@@ -47,6 +47,6 @@ Run the `atlassian_validate_connection` tool from your MCP client. It should ret
 
 ## Documentation
 
-- `docs/config.md`: environment variables
-- `docs/security.md`: PAT handling
-- `docs/tools.md`: tool list and write safety
+- [docs/config.md](docs/config.md): environment variables
+- [docs/security.md](docs/security.md): PAT handling
+- [docs/tools.md](docs/tools.md): tool list and write safety
