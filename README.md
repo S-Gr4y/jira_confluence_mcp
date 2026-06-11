@@ -30,7 +30,7 @@ This server runs as a local stdio MCP server. All clients need the same command 
       "env": {
         "JIRA_BASE_URL": "https://jira.example.company.com",
         "CONFLUENCE_BASE_URL": "https://confluence.example.company.com",
-        "ATLASSIAN_PAT": "paste-your-token-here"
+        "ATLASSIAN_PAT": "${env:ATLASSIAN_PAT}"
       }
     }
   }
@@ -43,7 +43,7 @@ Configure at least one product URL. Jira tools require `JIRA_BASE_URL`; Confluen
 
 ## Client Setup Examples
 
-Use the examples below as starting points. Replace the URLs with your Data Center/Server instances. For the PAT, prefer `${ATLASSIAN_PAT}` or your client's secret input support over pasting the token into a repository file.
+Use the examples below as starting points. Replace the URLs with your Data Center/Server instances. For the PAT, prefer `${env:ATLASSIAN_PAT}` or your client's secret input support over pasting the token into a repository file.
 
 ### OpenAI Codex
 
@@ -58,7 +58,7 @@ enabled = true
 [mcp_servers.atlassian-dc.env]
 JIRA_BASE_URL = "https://jira.example.company.com"
 CONFLUENCE_BASE_URL = "https://confluence.example.company.com"
-ATLASSIAN_PAT = "paste-your-token-here"
+ATLASSIAN_PAT = "${env:ATLASSIAN_PAT}"
 ```
 
 You can also manage servers with the Codex CLI:
@@ -74,7 +74,7 @@ If you use the CLI command, add the three environment variables in your Codex co
 Claude Code can add stdio MCP servers from the terminal. Put options before the server name, then put the server command after `--`.
 
 ```sh
-export ATLASSIAN_PAT="paste-your-token-here"
+export ATLASSIAN_PAT="<YOUR_ATLASSIAN_PAT>"
 
 claude mcp add --transport stdio --scope user \
   --env JIRA_BASE_URL=https://jira.example.company.com \
@@ -102,7 +102,7 @@ Open Claude Desktop's MCP configuration from the app settings, then add a local 
       "env": {
         "JIRA_BASE_URL": "https://jira.example.company.com",
         "CONFLUENCE_BASE_URL": "https://confluence.example.company.com",
-        "ATLASSIAN_PAT": "paste-your-token-here"
+        "ATLASSIAN_PAT": "${env:ATLASSIAN_PAT}"
       }
     }
   }
@@ -124,7 +124,7 @@ Open Cursor Settings, go to MCP, and add a new server. For JSON-based setup, use
       "env": {
         "JIRA_BASE_URL": "https://jira.example.company.com",
         "CONFLUENCE_BASE_URL": "https://confluence.example.company.com",
-        "ATLASSIAN_PAT": "paste-your-token-here"
+        "ATLASSIAN_PAT": "${env:ATLASSIAN_PAT}"
       }
     }
   }
@@ -132,6 +132,34 @@ Open Cursor Settings, go to MCP, and add a new server. For JSON-based setup, use
 ```
 
 Keep PAT-bearing Cursor config local. Do not commit workspace MCP files that contain real tokens.
+
+### OpenCode
+
+OpenCode reads JSON/JSONC config from `~/.config/opencode/opencode.json` (or project `opencode.json` / `.opencode/opencode.json`). Add local MCP servers under `mcp` with `type: "local"`.
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "atlassian-dc": {
+      "type": "local",
+      "command": ["npx", "-y", "jira-confluence-atlassian-interactor"],
+      "enabled": true,
+      "environment": {
+        "JIRA_BASE_URL": "https://jira.example.company.com",
+        "CONFLUENCE_BASE_URL": "https://confluence.example.company.com",
+        "ATLASSIAN_PAT": "${env:ATLASSIAN_PAT}"
+      }
+    }
+  }
+}
+```
+
+Set `ATLASSIAN_PAT` in your shell before launching OpenCode, then run:
+
+```sh
+opencode mcp list
+```
 
 ### VS Code / GitHub Copilot Agent Mode
 
@@ -147,18 +175,10 @@ VS Code uses an `mcp.json` file with a top-level `servers` object. For workspace
       "env": {
         "JIRA_BASE_URL": "https://jira.example.company.com",
         "CONFLUENCE_BASE_URL": "https://confluence.example.company.com",
-        "ATLASSIAN_PAT": "${input:atlassian-pat}"
+        "ATLASSIAN_PAT": "${env:ATLASSIAN_PAT}"
       }
     }
-  },
-  "inputs": [
-    {
-      "id": "atlassian-pat",
-      "type": "promptString",
-      "description": "Atlassian Data Center PAT",
-      "password": true
-    }
-  ]
+  }
 }
 ```
 
@@ -201,11 +221,14 @@ Set `ATLASSIAN_PAT` in your shell or OS environment before launching Windsurf.
 - Run `atlassian_validate_connection` first; it should return authenticated user details for each configured product.
 - Never commit real PATs. Use user-level config, prompt inputs, environment variables, or a secret manager.
 
+PAT handling differs by client: `env` interpolation (`${env:ATLASSIAN_PAT}`) is used where supported, while some clients may require prompt-based input blocks such as `${input:...}`.
+
 ## Reference Docs
 
 - [Codex MCP configuration](https://developers.openai.com/codex/cli/features#model-context-protocol-mcp)
 - [Claude Code MCP](https://docs.anthropic.com/en/docs/claude-code/mcp)
 - [Cursor MCP](https://cursor.com/docs/mcp)
+- [OpenCode MCP servers](https://dev.opencode.ai/docs/mcp-servers/)
 - [VS Code MCP servers](https://code.visualstudio.com/docs/agent-customization/mcp-servers)
 - [VS Code MCP configuration reference](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration)
 - [Windsurf Cascade MCP](https://docs.windsurf.com/windsurf/cascade/mcp)
