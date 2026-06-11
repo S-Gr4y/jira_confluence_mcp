@@ -75,6 +75,73 @@ Jira and Confluence may be configured independently. This supports installations
 
 The PAT must not be stored in repository files. Logs and errors must redact `Authorization` headers and token-like values.
 
+## Installation and User Configuration
+
+The project must include clear user-facing setup documentation. A user should be able to install the MCP server, configure Jira and Confluence URLs, provide a PAT, and verify the connection without reading source code.
+
+Required docs:
+
+- `README.md`: quick start, supported platforms, installation, and MCP client setup examples.
+- `docs/config.md`: full environment variable reference.
+- `docs/security.md`: PAT handling, storage guidance, log redaction, and rotation advice.
+- `docs/tools.md`: tool catalog with read/write safety notes.
+
+The README should include examples for common MCP clients using stdio. The exact client file locations vary by host, so docs should explain the pattern rather than hard-coding only one client.
+
+Example MCP server command:
+
+```json
+{
+  "mcpServers": {
+    "atlassian-dc": {
+      "command": "npx",
+      "args": ["-y", "jira-confluence-atlassian-interactor"],
+      "env": {
+        "JIRA_BASE_URL": "https://jira.example.company.com",
+        "CONFLUENCE_BASE_URL": "https://confluence.example.company.com",
+        "ATLASSIAN_PAT": "paste-your-token-here"
+      }
+    }
+  }
+}
+```
+
+The preferred production guidance is to avoid placing the PAT directly in a committed configuration file. Users should put the PAT in a local-only environment variable or secret manager and reference it from their MCP host when supported.
+
+Local shell example:
+
+```sh
+export JIRA_BASE_URL="https://jira.example.company.com"
+export CONFLUENCE_BASE_URL="https://confluence.example.company.com"
+export ATLASSIAN_PAT="paste-your-token-here"
+```
+
+The repository should include `.env.example` with placeholder values only. It must also include `.gitignore` entries for `.env`, `.env.*`, and other local secret files.
+
+PAT documentation must tell users:
+
+- Create the PAT from their Jira or Confluence Data Center/Server user profile.
+- Use a token owned by their own user account, not a shared admin account.
+- Grant only the access they need in Atlassian.
+- Prefer expiring tokens where company policy requires it.
+- Rotate the token if it is exposed.
+- Never commit the token to git, paste it into issue comments, or include it in logs.
+
+The first verification step should be:
+
+```text
+Run `atlassian_validate_connection` from the MCP client and confirm Jira and/or Confluence report authenticated access.
+```
+
+If validation fails, troubleshooting docs should cover:
+
+- Incorrect base URL.
+- PAT copied with whitespace.
+- PAT created in the wrong product or by the wrong user.
+- Data Center/Server version without PAT support or with PATs disabled by admins.
+- Corporate TLS interception or custom certificates.
+- User lacks permission to view the target project, space, page, or issue.
+
 ## MCP Tool Surface
 
 The v1 tool surface should be intentionally small and workflow-oriented instead of exposing the full Atlassian REST API.
