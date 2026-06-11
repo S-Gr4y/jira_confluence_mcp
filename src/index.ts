@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
@@ -13,8 +14,10 @@ export async function main(): Promise<void> {
   await server.connect(transport);
 }
 
-main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(`Fatal MCP server error: ${message}`);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Fatal MCP server error: ${message}`);
+    process.exit(1);
+  });
+}
