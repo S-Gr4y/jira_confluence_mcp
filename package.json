@@ -1,0 +1,35 @@
+{
+  "name": "jira-confluence-atlassian-interactor",
+  "version": "0.1.0",
+  "description": "MCP server for Jira and Confluence Data Center/Server using PAT bearer authentication.",
+  "type": "module",
+  "bin": {
+    "jira-confluence-atlassian-interactor": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs",
+    "skills"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "fast-xml-parser": "^4.5.3",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.9"
+  }
+}
