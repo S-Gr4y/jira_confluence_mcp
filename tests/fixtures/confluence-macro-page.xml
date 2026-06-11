@@ -1,0 +1,12 @@
+<p>Intro</p>
+<ac:structured-macro ac:name="expand">
+  <ac:parameter ac:name="title">Details</ac:parameter>
+  <ac:rich-text-body>
+    <p>Nested text</p>
+    <ac:structured-macro ac:name="code">
+      <ac:parameter ac:name="language">typescript</ac:parameter>
+      <ac:plain-text-body><![CDATA[const value = "<keep>";]]></ac:plain-text-body>
+    </ac:structured-macro>
+  </ac:rich-text-body>
+</ac:structured-macro>
+<p>Outro</p>
