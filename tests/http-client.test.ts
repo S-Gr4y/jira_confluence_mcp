@@ -33,6 +33,33 @@ describe("AtlassianHttpClient", () => {
     );
   });
 
+  it("adds basic auth when username and API token are provided", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      })
+    );
+
+    const client = new AtlassianHttpClient({
+      baseUrl: "https://jira.example.com",
+      basicAuthUsername: "alice@example.com",
+      basicAuthToken: "cloud-token",
+      fetchImpl: fetchMock
+    });
+
+    await client.get("rest/api/2/myself");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://jira.example.com/rest/api/2/myself",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: `Basic ${Buffer.from("alice@example.com:cloud-token").toString("base64")}`
+        })
+      })
+    );
+  });
+
   it("joins trailing slash base URLs with relative paths", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
@@ -142,6 +169,31 @@ describe("AtlassianHttpClient", () => {
       expect(error).toBeInstanceOf(AtlassianError);
       expect(JSON.stringify((error as AtlassianError).details)).toContain("[REDACTED]");
       expect(JSON.stringify((error as AtlassianError).details)).not.toContain("secret");
+    }
+  });
+
+  it("redacts basic auth tokens from failed response details", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ errorMessages: ["bad token cloud-token"] }), {
+        status: 401,
+        headers: { "content-type": "application/json" }
+      })
+    );
+
+    const client = new AtlassianHttpClient({
+      baseUrl: "https://jira.example.com",
+      basicAuthUsername: "alice@example.com",
+      basicAuthToken: "cloud-token",
+      fetchImpl: fetchMock
+    });
+
+    try {
+      await client.get("/rest/api/2/myself");
+      expect.fail("Expected request to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(AtlassianError);
+      expect(JSON.stringify((error as AtlassianError).details)).toContain("[REDACTED]");
+      expect(JSON.stringify((error as AtlassianError).details)).not.toContain("cloud-token");
     }
   });
 });

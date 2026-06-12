@@ -3,15 +3,34 @@ import { AtlassianError } from "./errors.js";
 
 export interface HttpClientOptions {
   baseUrl: string;
-  pat: string;
+  pat?: string;
+  basicAuthUsername?: string;
+  basicAuthToken?: string;
   fetchImpl?: typeof fetch;
 }
 
 export class AtlassianHttpClient {
   private readonly fetchImpl: typeof fetch;
+  private readonly authorization: string;
+  private readonly redactionSecrets: string[];
 
   constructor(private readonly options: HttpClientOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
+    this.authorization = this.getAuthorizationHeader(options);
+    this.redactionSecrets = [options.pat, options.basicAuthToken, options.basicAuthUsername].filter(Boolean) as string[];
+  }
+
+  private getAuthorizationHeader(options: HttpClientOptions): string {
+    if (options.basicAuthUsername && options.basicAuthToken) {
+      const credentials = `${options.basicAuthUsername}:${options.basicAuthToken}`;
+      return `Basic ${Buffer.from(credentials).toString("base64")}`;
+    }
+
+    if (options.pat) {
+      return `Bearer ${options.pat}`;
+    }
+
+    throw new Error("Missing authentication credentials");
   }
 
   async get<T>(path: string, query?: Record<string, string | number | boolean | undefined>): Promise<T> {
@@ -37,7 +56,7 @@ export class AtlassianHttpClient {
       method,
       headers: {
         accept: "application/json",
-        authorization: `Bearer ${this.options.pat}`,
+        authorization: this.authorization,
         ...(body === undefined ? {} : { "content-type": "application/json" })
       },
       body: body === undefined ? undefined : JSON.stringify(body)
@@ -49,9 +68,9 @@ export class AtlassianHttpClient {
     if (!response.ok) {
       const message = redactSensitive(
         `Atlassian request failed with status ${response.status}: ${text}`,
-        [this.options.pat]
+        this.redactionSecrets
       );
-      throw new AtlassianError(message, response.status, redactDetails(parsed, [this.options.pat]));
+      throw new AtlassianError(message, response.status, redactDetails(parsed, this.redactionSecrets));
     }
 
     return parsed as T;

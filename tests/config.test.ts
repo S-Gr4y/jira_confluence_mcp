@@ -15,7 +15,27 @@ describe("loadConfig", () => {
       loadConfig({
         JIRA_BASE_URL: "https://jira.example.com"
       })
-    ).toThrow("ATLASSIAN_PAT is required");
+    ).toThrow("ATLASSIAN_PAT, or both ATLASSIAN_USERNAME and ATLASSIAN_API_TOKEN, are required");
+  });
+
+  it("supports Basic auth via username and API token", () => {
+    const config = loadConfig({
+      JIRA_BASE_URL: "https://jira.example.com",
+      ATLASSIAN_USERNAME: "alice@example.com",
+      ATLASSIAN_API_TOKEN: "cloud-token"
+    });
+
+    expect(config.basicAuthUsername).toBe("alice@example.com");
+    expect(config.basicAuthToken).toBe("cloud-token");
+  });
+
+  it("requires both ATLASSIAN_USERNAME and ATLASSIAN_API_TOKEN", () => {
+    expect(() =>
+      loadConfig({
+        JIRA_BASE_URL: "https://jira.example.com",
+        ATLASSIAN_USERNAME: "alice@example.com"
+      })
+    ).toThrow("ATLASSIAN_USERNAME and ATLASSIAN_API_TOKEN must both be set for Basic auth");
   });
 
   it("normalizes trailing slashes", () => {

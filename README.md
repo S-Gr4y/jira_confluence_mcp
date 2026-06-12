@@ -1,16 +1,18 @@
 # Jira Confluence Atlassian Interactor
 
-Standalone MCP server for Jira and Confluence Data Center/Server using user-provided personal access tokens.
+Standalone MCP server for Jira and Confluence.
+
+Use `ATLASSIAN_PAT` for Jira/Confluence Data Center/Server (Bearer token) or `ATLASSIAN_USERNAME` + `ATLASSIAN_API_TOKEN` for Cloud (Basic auth).
 
 ## Requirements
 
 - Node.js 20 or newer
-- Jira Data Center/Server and/or Confluence Data Center/Server
-- A PAT created by the user in Atlassian
+- Jira and/or Confluence
+- A PAT created in Atlassian for Data Center/Server, or an Atlassian Cloud API token with username
 
 ## Quick Start
 
-1. Create a personal access token from your own Jira or Confluence Data Center/Server user profile.
+1. Create either a Data Center/Server PAT or, for Cloud, use your Atlassian username and API token.
 2. Add the server to your MCP client using stdio.
 3. Put the PAT in the MCP client's local environment configuration, a local shell environment variable, or a secret manager if your client supports one.
 4. Run `atlassian_validate_connection` from your MCP client.

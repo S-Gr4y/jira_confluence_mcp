@@ -21,14 +21,27 @@ export async function main(): Promise<void> {
   });
 
   const jira = config.jiraBaseUrl
-    ? new JiraClient(new AtlassianHttpClient({ baseUrl: config.jiraBaseUrl, pat: config.pat }), config.jiraBaseUrl)
+    ? new JiraClient(
+      new AtlassianHttpClient({
+        baseUrl: config.jiraBaseUrl,
+        pat: config.pat,
+        basicAuthUsername: config.basicAuthUsername,
+        basicAuthToken: config.basicAuthToken
+      }),
+      config.jiraBaseUrl
+    )
     : undefined;
 
   const confluence = config.confluenceBaseUrl
     ? new ConfluenceClient(
-        new AtlassianHttpClient({ baseUrl: config.confluenceBaseUrl, pat: config.pat }),
-        config.confluenceBaseUrl
-      )
+      new AtlassianHttpClient({
+        baseUrl: config.confluenceBaseUrl,
+        pat: config.pat,
+        basicAuthUsername: config.basicAuthUsername,
+        basicAuthToken: config.basicAuthToken
+      }),
+      config.confluenceBaseUrl
+    )
     : undefined;
 
   registerTools(server, buildSharedTools({ jira, confluence }));
