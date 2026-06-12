@@ -17,12 +17,27 @@ function normalizeBaseUrl(value: string | undefined): string | undefined {
   return parsed.toString().replace(/\/$/, "");
 }
 
+const templateVarPattern = /^\$\{([A-Z_]+)\}$/;
+
+function resolveEnvVar(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const match = value.match(templateVarPattern);
+  if (match) {
+    return process.env[match[1]];
+  }
+
+  return value;
+}
+
 export function loadConfig(env: Env = process.env): AppConfig {
-  const jiraBaseUrl = normalizeBaseUrl(env.JIRA_BASE_URL);
-  const confluenceBaseUrl = normalizeBaseUrl(env.CONFLUENCE_BASE_URL);
-  const pat = env.ATLASSIAN_PAT?.trim();
-  const basicAuthUsername = env.ATLASSIAN_USERNAME?.trim() ?? env.ATLASSIAN_USER?.trim();
-  const basicAuthToken = env.ATLASSIAN_API_TOKEN?.trim() ?? env.ATLASSIAN_TOKEN?.trim();
+  const jiraBaseUrl = normalizeBaseUrl(resolveEnvVar(env.JIRA_BASE_URL));
+  const confluenceBaseUrl = normalizeBaseUrl(resolveEnvVar(env.CONFLUENCE_BASE_URL));
+  const pat = resolveEnvVar(env.ATLASSIAN_PAT);
+  const basicAuthUsername = resolveEnvVar(env.ATLASSIAN_USERNAME) ?? resolveEnvVar(env.ATLASSIAN_USER);
+  const basicAuthToken = resolveEnvVar(env.ATLASSIAN_API_TOKEN) ?? resolveEnvVar(env.ATLASSIAN_TOKEN);
 
   if (!jiraBaseUrl && !confluenceBaseUrl) {
     throw new Error("At least one of JIRA_BASE_URL or CONFLUENCE_BASE_URL is required");

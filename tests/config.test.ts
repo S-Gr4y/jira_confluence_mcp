@@ -48,6 +48,15 @@ describe("loadConfig", () => {
     expect(config.jiraBaseUrl).toBe("https://jira.example.com");
     expect(config.confluenceBaseUrl).toBe("https://confluence.example.com");
   });
+
+  it("resolves template variables like ${VAR} from process.env", () => {
+    const config = loadConfig({
+      JIRA_BASE_URL: "https://jira.example.com",
+      ATLASSIAN_PAT: "${ATLASSIAN_PAT}"
+    });
+
+    expect(config.pat).toBe(process.env.ATLASSIAN_PAT);
+  });
 });
 
 describe("redactSensitive", () => {
