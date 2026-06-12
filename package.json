@@ -1,6 +1,6 @@
 {
   "name": "jira-confluence-atlassian-interactor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for Jira and Confluence Data Center/Server using PAT bearer authentication.",
   "type": "module",
   "bin": {
